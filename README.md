@@ -1,6 +1,7 @@
 # HTMLxDiscord.js 🧙‍♂️
 
 Hello! This is a simple script I made in like 4 hours for demonstration of HTTP Communication between Discord.API with the HTML. It will make you to be able to anyone but as a bot.
+![Uploading image.png…]()
 
 ## How to Use?
 
