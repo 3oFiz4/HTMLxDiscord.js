@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discord Message Sender</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <style>
+    #recent-messages {
+      max-height: 300px; /* Adjust the height as needed */
+      overflow-y: scroll;
+      border: 1px solid #ccc;
+      padding: 10px;
+      list-style-type: none;
+    }
+
+    #recent-messages li {
+      margin-bottom: 10px;
+    }
+  </style>
+  <body>
+    <h1>Send Message to Discord</h1>
+    <details>
+      Simple script madde by 3oFiz4 to simulate HTTP communication between
+      Discord API and a Server with Express.js. Funny.
+    </details>
+
+    <label for="bot_token">Bot Token:</label>
+    <input type="password" id="bot_token" name="bot_token" required />
+    <div id="token-status"></div>
+
+    <form id="discord-form">
+      <label for="channel_id">Channel ID:</label>
+      <input type="text" id="channel_id" name="channel_id" required />
+      <p id="server_name" style="display: inline"></p>
+      <br /><br />
+
+      <label for="user_to_reply">User to Reply (optional):</label>
+      <select id="user_to_reply" name="user_to_reply">
+        <option value="">Select a user</option></select
+      ><br /><br />
+
+      <label for="text_to_say">Text to Say:</label>
+      <textarea id="text_to_say" name="text_to_say" required></textarea
+      ><br /><br />
+
+      <label for="image_url">Image URL (optional):</label>
+      <input type="url" id="image_url" name="image_url" /><br /><br />
+
+      <!-- Option 1: Select a message from recent messages -->
+      <label for="recent_messages">Reply to a Recent Message:</label>
+      <select id="recent_messages" name="message_id_to_reply">
+        <option value="" style="font-size: 8px">
+          Select a message
+        </option></select
+      ><br /><br />
+
+      <!-- Option 2: Manually enter a message ID to reply to -->
+      <label for="message_id_to_reply"
+        >Or Enter Message ID to Reply (optional):</label
+      >
+      <input
+        type="text"
+        id="message_id_to_reply"
+        name="message_id_to_reply"
+      /><br /><br />
+
+      <button type="submit">Send Message</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+      $(document).ready(function () {
+        let channelId = null;
+
+        // GET recent messages
+        function fetchRecentMessages() {
+          if (!channelId) return;
+
+          $.ajax({
+            url: "/get-recent-messages",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ channel_id: channelId }),
+            success: function (response) {
+              if (response.success) {
+                const messages = response.messages;
+                $("#recent-messages").empty(); // CLEAR
+
+                // append new messages with the username and message content
+                messages.forEach((message) => {
+                  const messageElement = `<li><strong>${message.username}</strong>: ${message.content}</li>`;
+                  $("#recent-messages").append(messageElement);
+                });
+
+                // update the "recent_messages" select dropdown with new messages
+                const $recentMessagesDropdown = $("#recent_messages");
+                $recentMessagesDropdown.empty();
+                $recentMessagesDropdown.append(
+                  '<option value="">Select a message</option>'
+                );
+                messages.forEach((message) => {
+                  const option = `<option value="${message.id}">${message.username}: ${message.content}</option>`;
+                  $recentMessagesDropdown.append(option);
+                });
+              }
+            },
+            complete: function () {
+              // Re-Poll after 1 second
+              setTimeout(fetchRecentMessages, 1000); // Poll every second
+            },
+            error: function () {
+              $("#result").text("Failed to fetch recent messages!");
+            },
+          });
+        }
+
+        $("#channel_id").on("input", function () {
+          const channelId = $(this).val();
+          if (channelId) {
+            // GET and POST server name
+            $.ajax({
+              url: "/get-server-name",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({ channel_id: channelId }),
+              success: function (response) {
+                if (response.success) {
+                  $("#server_name").text(`Server: ${response.server_name}`);
+                } else {
+                  $("#server_name").text("Failed to fetch server name");
+                }
+              },
+              error: function () {
+                $("#server_name").text("Error fetching server name");
+              },
+            });
+
+            // GET and POST member list
+            $.ajax({
+              url: "/get-members",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({ channel_id: channelId }),
+              success: function (response) {
+                if (response.success) {
+                  const memberList = $("#user_to_reply");
+                  memberList.empty();
+                  memberList.append('<option value="">Select a user</option>');
+                  response.members.forEach((member) => {
+                    memberList.append(
+                      `<option value="${member.id}">${member.username}</option>`
+                    );
+                  });
+                }
+              },
+              error: function () {
+                $("#user_to_reply").html(
+                  '<option value="">Error loading members</option>'
+                );
+              },
+            });
+
+            // GET AND POST recent messages
+            $.ajax({
+              url: "/get-recent-messages",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({ channel_id: channelId }),
+              success: function (response) {
+                if (response.success) {
+                  const messages = response.messages;
+                  $("#recent-messages").empty(); // CLEAR
+
+                  // append new messages with the username and message content
+                  messages.forEach((message) => {
+                    const messageElement = `<li><strong>${message.username}</strong>: ${message.content}</li>`;
+                    $("#recent-messages").append(messageElement);
+                  });
+
+                  // update the "recent_messages" select dropdown with new messages
+                  const $recentMessagesDropdown = $("#recent_messages");
+                  $recentMessagesDropdown.empty();
+                  $recentMessagesDropdown.append(
+                    '<option value="">Select a message</option>'
+                  );
+                  messages.forEach((message) => {
+                    const option = `<option value="${message.id}">${message.username}: ${message.content}</option>`;
+                    $recentMessagesDropdown.append(option);
+                  });
+                }
+              },
+              complete: function () {
+                // Repoll again after 1 second
+                setTimeout(fetchRecentMessages, 1000);
+              },
+              error: function () {
+                $("#result").text("Failed to fetch recent messages!");
+              },
+            });
+          }
+        });
+
+        let typingTimer;
+        const doneTypingInterval = 1000; // A delay when typing stops
+
+        $("#bot_token").on("input", function () {
+          clearTimeout(typingTimer);
+          typingTimer = setTimeout(doneTyping, doneTypingInterval);
+        });
+
+        // Intuitive
+        function doneTyping() {
+          const botToken = $("#bot_token").val();
+
+          if (botToken) {
+            $.ajax({
+              url: "/set-bot-token",
+              type: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({ bot_token: botToken }),
+              success: function (response) {
+                const { username, userId } = response;
+                $("#token-status").text(`Found ${username}(${userId})`);
+              },
+              error: function (response) {
+                $("#token-status").text(
+                  "Failed to set token. Please try again."
+                );
+              },
+            });
+          }
+        }
+
+        $("#discord-form").on("submit", function (event) {
+          event.preventDefault();
+          channelId = $("#channel_id").val();
+          fetchRecentMessages();
+
+          const data = {
+            channel_id: $("#channel_id").val(),
+            user_to_reply: $("#user_to_reply").val() || null,
+            text_to_say: $("#text_to_say").val(),
+            image_url: $("#image_url").val() || null,
+            message_id_to_reply:
+              $("#message_id_to_reply").val() ||
+              $("#recent_messages").val() ||
+              null,
+          };
+
+          $.ajax({
+            url: "/send-message",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            success: function (response) {
+              $("#result").text(response.message);
+            },
+            error: function (response) {
+              $("#result").text(response.responseJSON.message);
+            },
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
