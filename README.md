@@ -46,15 +46,13 @@ node server.js
 ```
 
 ### Todo:
+```
+[X] Provideable BOT token
+[X] Channel ID with a working server name
+[X] Ping User
+[X] Working text
+[O] Send Image URL, from PC or from clipboard (partially done)
+[X] Reply to Recent messages
+[ ] Improve UI 
+```
 
-<details>
-  <summary>Todo</summary>
-  [X] Provideable BOT token
-  [X] Channel ID with a working server name
-  [X] Ping User
-  [X] Working text
-  [O] Send Image URL, from PC or from clipboard (partially done)
-  [X] Reply to Recent messages
-  [ ] Improve UI 
-  ```
-</details>
